@@ -51,15 +51,32 @@ class Manus extends Adminbase{
 		if(Request::instance()->post()){
 			$data = input('post.');
 			//halt($data);
+			$info['article_list_id'] = $data['id'];
 			if($data['status']==-1){
 				$info['article_status'] = -1;//将状态改为待发布
 			}else{
 				$info['article_status'] = -3;//将状态改为审核失败
 				$info['remark'] = $data['reason'];//将状态改为审核失败
 			}
+	//根据文章id查出来文章表中相关信息
+			$articleinfo = DB::name('XwtArticle')->where('id',$data['articleid'])->find();
+			$info['price']  = $data['price'];
+			$info['url'] = $articleinfo['doc_url'];
+			// $info['reason'] = $articleinfo['remark'];
+			$info['op_time'] = time();
+			$info['op_ip'] = $_SERVER['REMOTE_ADDR'];
+			if(session('admin')['type']==1){//1是运营中心
+				$info['op_level'] =2;
+			}elseif(session('admin')['type']==0){
+				$info['op_level'] =3;
+			}else{
+
+			}
+			//halt($data);
+			$lists['article_status'] = -1;
 //	将ArticleOp XwtArticleList中article状态更改
-			$result = DB::name('XwtArticleOp')->where('id',$data['id'])->update($info);
-			$result = DB::name('XwtArticleList')->where('id',$data['id'])->update($info);
+			$result = DB::name('XwtArticleOp')->where('id',$data['id'])->insert($info);
+			$result = DB::name('XwtArticleList')->where('id',$data['id'])->update($lists);
 
 			if($result){
 				$this->success('审核成功');
@@ -104,6 +121,7 @@ class Manus extends Adminbase{
 		return $this->fetch();
 	}
 
+//将文章退稿
 	public function  postrejection($id){
 		
 		if(Request::instance()->isAjax()){
